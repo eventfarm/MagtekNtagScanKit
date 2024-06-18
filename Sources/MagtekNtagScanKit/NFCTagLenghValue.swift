@@ -20,7 +20,7 @@ public class NFCTagLenghValue {
         var index = 0
         var result: [NFCTagLenghValue] = []
         
-        while (index < data.count) {
+        while index < data.count {
             let tag = data[index]
             index = index + 1
             
@@ -28,12 +28,14 @@ public class NFCTagLenghValue {
                 break
             }
             
-            let taglength = data[index]
+            guard let tagLength = data[safeIndex: index] else {
+                break
+            }
             index = index + 1
             
-            var length = Int(taglength)
-            if (taglength == 0xFF) {
-                length = Int(data[index]) * 256 + Int(data[index + 1])
+            var length = Int(tagLength)
+            if tagLength == 0xFF, let dataStart = data[safeIndex: index], let dataEnd = data[safeIndex: index + 1] {
+                length = Int(dataStart) * 256 + Int(dataEnd)
                 index = index + 2
             }
             let valueEndIndex = index + length
@@ -44,5 +46,16 @@ public class NFCTagLenghValue {
         }
         
         return result
+    }
+}
+
+private extension Array {
+    
+    subscript(safeIndex index: Int) -> Element? {
+        guard index >= 0, index < endIndex else {
+            return nil
+        }
+
+        return self[index]
     }
 }
