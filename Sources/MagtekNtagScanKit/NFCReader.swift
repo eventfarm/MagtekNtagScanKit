@@ -32,7 +32,7 @@ public protocol NFCReader {
     var isDeviceConnected: Bool { get }
     var debugMessageCallback: ((String) -> Void)? { get set }
     
-    func begin(completion: @escaping (Result<String, Error>) -> Void)
+    func begin(completion: @escaping (Result<String, Error>) -> Void, onDisconnect: @escaping () -> Void)
     func cancel()
 }
 
@@ -57,6 +57,7 @@ public class DefaultNFCReader: NSObject, NFCReader {
     ]
     private let settings: NFCReaderSettings
     private var completion: ((Result<String, Error>) -> Void)?
+    private var onDisconnect: (() -> Void)?
     
     public var debugMessageCallback: ((String) -> Void)?
     
@@ -80,9 +81,13 @@ public class DefaultNFCReader: NSObject, NFCReader {
         deviceConnected()
     }
     
-    public func begin(completion: @escaping (Result<String, Error>) -> Void) {
+    public func begin(
+        completion: @escaping (Result<String, Error>) -> Void,
+        onDisconnect: @escaping () -> Void
+    ) {
         deviceConnected()
         self.completion = completion
+        self.onDisconnect = onDisconnect
         
         let success = lib.openDeviceSync()
         guard success else {
@@ -260,6 +265,7 @@ extension DefaultNFCReader: EADetectorDelegate {
     
     public func deviceDisconnected() {
         cancel()
+        onDisconnect?()
     }
 }
 
