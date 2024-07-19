@@ -42,7 +42,7 @@ public class DefaultNFCReader: NSObject, NFCReader {
         getConnectedDevice() != nil
     }
     
-    private let transactionDelay = 1.2
+    private let transactionDelay = 0.4
     
     private var lib = MTSCRA()
     private var selectedDevice = ReaderDevice.iDynamo6.rawValue
@@ -61,8 +61,8 @@ public class DefaultNFCReader: NSObject, NFCReader {
     
     public var debugMessageCallback: ((String) -> Void)?
     
-    public override init() {
-        self.settings = .init(debugEnabled: true)
+    public init(settings: NFCReaderSettings) {
+        self.settings = settings
         super.init()
         
         lib.delegate = self
