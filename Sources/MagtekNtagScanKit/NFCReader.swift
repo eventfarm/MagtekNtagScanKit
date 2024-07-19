@@ -32,7 +32,7 @@ public protocol NFCReader {
     var isDeviceConnected: Bool { get }
     var debugMessageCallback: ((String) -> Void)? { get set }
     
-    func begin(completion: @escaping (Result<String, Error>) -> Void)
+    func begin(completion: @escaping (Result<String, Error>) -> Void, onDisconnect: @escaping () -> Void)
     func cancel()
 }
 
@@ -57,11 +57,12 @@ public class DefaultNFCReader: NSObject, NFCReader {
     ]
     private let settings: NFCReaderSettings
     private var completion: ((Result<String, Error>) -> Void)?
+    private var onDisconnect: (() -> Void)?
     
     public var debugMessageCallback: ((String) -> Void)?
     
-    public override init() {
-        self.settings = .init(debugEnabled: true)
+    public init(settings: NFCReaderSettings) {
+        self.settings = settings
         super.init()
         
         lib.delegate = self
@@ -80,15 +81,19 @@ public class DefaultNFCReader: NSObject, NFCReader {
         deviceConnected()
     }
     
-    public func begin(completion: @escaping (Result<String, Error>) -> Void) {
+    public func begin(
+        completion: @escaping (Result<String, Error>) -> Void,
+        onDisconnect: @escaping () -> Void
+    ) {
         self.completion = completion
+        self.onDisconnect = onDisconnect
         
         let success = lib.openDeviceSync()
         guard success else {
             completion(.failure(NFCReaderError.unknown))
             return
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + transactionDelay) { [self] in
+        DispatchQueue.global(qos: .background).asyncAfter(deadline: .now() + transactionDelay) { [self] in
             startTransaction()
         }
     }
@@ -256,6 +261,11 @@ extension DefaultNFCReader: EADetectorDelegate {
         }
         selectDevice(name)
     }
+    
+    public func deviceDisconnected() {
+        cancel()
+        onDisconnect?()
+    }
 }
 
 extension DefaultNFCReader: MTSCRAEventDelegate {
@@ -268,7 +278,7 @@ extension DefaultNFCReader: MTSCRAEventDelegate {
         log(connected ? "[Connected]" : "[Disconnected]")
         
         if connected {
-            DispatchQueue.main.async {
+            DispatchQueue.global(qos: .background).async {
                 self.initialDevice(self.selectedDevice)
             }
         }
@@ -287,7 +297,7 @@ extension DefaultNFCReader: MTSCRAEventDelegate {
         log("[Transaction Status]\n\(hex)")
         
         if hex == "1100000000" {
-            DispatchQueue.main.asyncAfter(deadline: .now() + transactionDelay) {
+            DispatchQueue.global(qos: .background).asyncAfter(deadline: .now() + transactionDelay) {
                 self.readNtag()
             }
         }
