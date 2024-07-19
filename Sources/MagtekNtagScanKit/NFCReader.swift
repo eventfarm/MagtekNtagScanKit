@@ -42,7 +42,7 @@ public class DefaultNFCReader: NSObject, NFCReader {
         getConnectedDevice() != nil
     }
     
-    private let transactionDelay = 0.4
+    private let transactionDelay = 0.6
     
     private var lib = MTSCRA()
     private var selectedDevice = ReaderDevice.iDynamo6.rawValue
