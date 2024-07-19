@@ -81,6 +81,7 @@ public class DefaultNFCReader: NSObject, NFCReader {
     }
     
     public func begin(completion: @escaping (Result<String, Error>) -> Void) {
+        deviceConnected()
         self.completion = completion
         
         let success = lib.openDeviceSync()
@@ -255,6 +256,10 @@ extension DefaultNFCReader: EADetectorDelegate {
             return
         }
         selectDevice(name)
+    }
+    
+    public func deviceDisconnected() {
+        cancel()
     }
 }
 
