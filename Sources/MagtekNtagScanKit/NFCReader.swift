@@ -85,7 +85,6 @@ public class DefaultNFCReader: NSObject, NFCReader {
         completion: @escaping (Result<String, Error>) -> Void,
         onDisconnect: @escaping () -> Void
     ) {
-        deviceConnected()
         self.completion = completion
         self.onDisconnect = onDisconnect
         
@@ -94,7 +93,7 @@ public class DefaultNFCReader: NSObject, NFCReader {
             completion(.failure(NFCReaderError.unknown))
             return
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + transactionDelay) { [self] in
+        DispatchQueue.global(qos: .background).asyncAfter(deadline: .now() + transactionDelay) { [self] in
             startTransaction()
         }
     }
@@ -279,7 +278,7 @@ extension DefaultNFCReader: MTSCRAEventDelegate {
         log(connected ? "[Connected]" : "[Disconnected]")
         
         if connected {
-            DispatchQueue.main.async {
+            DispatchQueue.global(qos: .background).async {
                 self.initialDevice(self.selectedDevice)
             }
         }
@@ -298,7 +297,7 @@ extension DefaultNFCReader: MTSCRAEventDelegate {
         log("[Transaction Status]\n\(hex)")
         
         if hex == "1100000000" {
-            DispatchQueue.main.asyncAfter(deadline: .now() + transactionDelay) {
+            DispatchQueue.global(qos: .background).asyncAfter(deadline: .now() + transactionDelay) {
                 self.readNtag()
             }
         }
