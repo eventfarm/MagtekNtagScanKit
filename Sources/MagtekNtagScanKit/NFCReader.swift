@@ -35,6 +35,7 @@ public protocol NFCReader {
     func begin(completion: @escaping (Result<String, Error>) -> Void, onDisconnect: @escaping () -> Void)
     func cancel()
     func closeDevice()
+    func connect()
 }
 
 public class DefaultNFCReader: NSObject, NFCReader {
@@ -97,6 +98,10 @@ public class DefaultNFCReader: NSObject, NFCReader {
         DispatchQueue.global(qos: .background).asyncAfter(deadline: .now() + transactionDelay) { [self] in
             startTransaction()
         }
+    }
+    
+    public func connect() {
+        deviceConnected()
     }
     
     public func cancel() {
@@ -269,6 +274,7 @@ extension DefaultNFCReader: EADetectorDelegate {
     
     public func deviceDisconnected() {
         cancel()
+        closeDevice()
         onDisconnect?()
     }
 }
