@@ -20,6 +20,11 @@ public enum NFCReaderError: Error {
     case statusCode(String)
 }
 
+public enum NFCReaderNotification {
+    public static let didDisconnect = NSNotification.Name(rawValue: "MTSCRA.readerDidDisconnectNotification")
+    public static let didBecomeConnected = NSNotification.Name(rawValue: "MTSCRA.readerDidBecomeConnectedNotification")
+}
+
 public struct NFCReaderSettings {
     let debugEnabled: Bool
     
@@ -29,6 +34,7 @@ public struct NFCReaderSettings {
 }
 
 public protocol NFCReader {
+    
     var isDeviceConnected: Bool { get }
     var debugMessageCallback: ((String) -> Void)? { get set }
     
@@ -45,7 +51,7 @@ public class DefaultNFCReader: NSObject, NFCReader {
     }
     
     private let transactionDelay = 0.4
-    
+    private let notificationCenter = NotificationCenter.default
     private var lib = MTSCRA()
     private var selectedDevice = ReaderDevice.iDynamo6.rawValue
     private var detector = EADetector()
@@ -230,6 +236,7 @@ public class DefaultNFCReader: NSObject, NFCReader {
         
         lib.setConnectionType(UInt(deviceCfg[device]?["Connection"] as! Int))
         lib.setDeviceType(UInt32(deviceCfg[device]?["Type"] as! Int))
+        notificationCenter.post(.init(name: NFCReaderNotification.didBecomeConnected))
     }
     
     private func initialDevice(_ device : String) {
@@ -273,6 +280,7 @@ extension DefaultNFCReader: EADetectorDelegate {
     }
     
     public func deviceDisconnected() {
+        notificationCenter.post(.init(name: NFCReaderNotification.didDisconnect))
         cancel()
         closeDevice()
         onDisconnect?()
